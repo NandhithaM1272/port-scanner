@@ -20,7 +20,6 @@ A web-based network security application that allows users to scan authorized ta
 - JavaScript
 - HTML
 - CSS
-- Bootstrap
 
 **Backend**
 - Python
@@ -29,7 +28,6 @@ A web-based network security application that allows users to scan authorized ta
 
 **Database**
 - Supabase
-- PostgreSQL
 
 ## Project Structure
 
