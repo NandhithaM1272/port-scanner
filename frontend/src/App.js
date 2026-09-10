@@ -1660,6 +1660,97 @@ td {
     };
 
   /* =======================================================
+    DOWNLOAD XML REPORT
+  ======================================================= */
+
+  const downloadXmlReport = () => {
+    if (!scannedTarget || ports.length === 0) {
+      setError(
+        "Please complete a scan before downloading the XML report."
+      );
+
+      return;
+    }
+
+    const escapeXml = (value) => {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+    };
+
+    const reportDate = new Date().toISOString();
+    const overallRisk = getOverallRisk();
+
+    const xmlPorts = ports
+      .map((port) => {
+        const risk = getRiskLevel(port);
+
+        return `
+      <port>
+        <number>${escapeXml(port.port)}</number>
+        <protocol>${escapeXml(
+          String(port.protocol || "").toUpperCase()
+        )}</protocol>
+        <state>${escapeXml(port.state || "")}</state>
+        <service>${escapeXml(
+          port.service || "Unknown"
+        )}</service>
+        <risk>${escapeXml(risk)}</risk>
+      </port>`;
+      })
+      .join("");
+
+    const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+
+  <securityScan>
+    <scanInformation>
+      <target>${escapeXml(scannedTarget)}</target>
+      <scanType>${escapeXml(settings.scanType)}</scanType>
+      <scanDate>${escapeXml(reportDate)}</scanDate>
+      <scanDuration>${escapeXml(scanDuration)}</scanDuration>
+      <totalOpenPorts>${ports.length}</totalOpenPorts>
+    </scanInformation>
+
+    <securityAssessment>
+      <securityScore>${securityScore}</securityScore>
+      <overallRisk>${escapeXml(overallRisk)}</overallRisk>
+      <highRisk>${riskSummary.high}</highRisk>
+      <mediumRisk>${riskSummary.medium}</mediumRisk>
+      <lowRisk>${riskSummary.low}</lowRisk>
+      <informational>${riskSummary.info}</informational>
+    </securityAssessment>
+
+    <openPorts>
+  ${xmlPorts}
+    </openPorts>
+  </securityScan>`;
+
+    const blob = new Blob(
+      [xmlContent],
+      {
+        type: "application/xml;charset=utf-8",
+      }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `security-scan-${scannedTarget
+      .replace(/[^a-zA-Z0-9.-]/g, "_")}.xml`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
+
+  /* =======================================================
      DOWNLOAD PDF REPORT
   ======================================================= */
 
@@ -3107,6 +3198,13 @@ td {
                   onClick={downloadPdfReport}
                 >
                   ↓ PDF Report
+                </button>
+
+                <button
+                  className="report-button"
+                  onClick={downloadXmlReport}
+                >
+                  ↓ XML Report
                 </button>
 
                 <button
